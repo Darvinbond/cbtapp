@@ -39,13 +39,21 @@ export const updateSession = async (request: NextRequest) => {
     // https://supabase.com/docs/guides/auth/server-side/nextjs
     const user = await supabase.auth.getUser();
 
-    // protected routes
-    if (request.nextUrl.pathname.startsWith("/protected") && user.error) {
-      return NextResponse.redirect(new URL("/sign-in", request.url));
+    const pathname = request.nextUrl.pathname;
+    const isLoggedIn = !user.error;
+    const isAuthPage = pathname.startsWith('/sign-in') || 
+                      pathname.startsWith('/sign-up') || 
+                      pathname.startsWith('/forgot-password');
+    const isAdminPage = pathname.startsWith('/admin');
+
+    // If on auth pages and logged in, redirect to admin
+    if (isAuthPage && isLoggedIn) {
+      return NextResponse.redirect(new URL('/admin', request.url));
     }
 
-    if (request.nextUrl.pathname === "/" && !user.error) {
-      return NextResponse.redirect(new URL("/protected", request.url));
+    // If on admin pages and not logged in, redirect to sign in
+    if (isAdminPage && !isLoggedIn) {
+      return NextResponse.redirect(new URL('/sign-in', request.url));
     }
 
     return response;
