@@ -1,5 +1,5 @@
 import HeaderAuth from "@/components/header-auth";
-import { Monitor } from "lucide-react";
+import { CornerDownLeft, Monitor, TestTubeDiagonal } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
@@ -14,12 +14,12 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <main className="min-h-screen flex bg-zinc-50 flex-col gap-[40px] items-center">
+    <main className="min-h-screen flex bg-white flex-col dgap-[40px] items-center">
       <nav className="w-full z-30 bg-white sticky top-0 flex justify-center border-b border-b-foreground/10 h-[48px]">
         <div className="w-full flex justify-between items-center dp-3 px-[40px] text-sm">
           <div className="flex gap-5 items-center font-semibold">
             <Link href={"/"}>
-              <Monitor />
+              <CornerDownLeft className="size-[20px]" />
             </Link>
           </div>
           <HeaderAuth />

@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { QuestionBank } from '@/types';
+import { api } from '@/utils/apiResponse';
 
 export async function GET() {
   const supabase = await createClient();
@@ -10,9 +11,9 @@ export async function GET() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return api.error(error.message);
   }
-  return NextResponse.json(data);
+  return api.ok(data);
 }
 
 export async function POST(request: Request) {
@@ -26,9 +27,9 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return api.error(error.message);
   }
-  return NextResponse.json(data, { status: 201 });
+  return api.ok(data);
 }
 
 export async function PUT(request: Request) {
@@ -43,9 +44,9 @@ export async function PUT(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return api.error(error.message);
   }
-  return NextResponse.json(data);
+  return api.ok(data);
 }
 
 export async function DELETE(request: Request) {
@@ -58,7 +59,7 @@ export async function DELETE(request: Request) {
     .eq('id', id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return api.error(error.message);
   }
-  return NextResponse.json({ success: true });
+  return api.ok({ success: true });
 }

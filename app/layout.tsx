@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={geistSans.className} suppressHydrationWarning>
       <body className="bg-background text-foreground">
-        <Toaster richColors closeButton position="top-right" />
+        <Toaster closeButton position="top-right" />
         {children}
       </body>
     </html>

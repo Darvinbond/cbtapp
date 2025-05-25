@@ -1,18 +1,22 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { CandidateTest } from '@/types';
+import { Params } from 'next/dist/server/request/params';
+import { api } from '@/utils/apiResponse';
 
-export async function GET() {
+export async function GET(request: Request, { params }: { params: Params }) {
+  const { testid } = params;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('candidate_tests')
     .select('*')
+    .eq('test_id', testid)
     .order('created_at', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return api.error(error.message);
   }
-  return NextResponse.json(data as CandidateTest[]);
+  return api.ok(data as CandidateTest[]);
 }
 
 export async function POST(request: Request) {
@@ -26,9 +30,9 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return api.error(error.message);
   }
-  return NextResponse.json(data as CandidateTest, { status: 201 });
+  return api.ok(data as CandidateTest);
 }
 
 export async function PUT(request: Request) {
@@ -43,9 +47,9 @@ export async function PUT(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return api.error(error.message);
   }
-  return NextResponse.json(data as CandidateTest);
+  return api.ok(data as CandidateTest);
 }
 
 export async function DELETE(request: Request) {
@@ -58,7 +62,7 @@ export async function DELETE(request: Request) {
     .eq('id', id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return api.error(error.message);
   }
-  return NextResponse.json({ success: true });
+  return api.ok({ success: true });
 }

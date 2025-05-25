@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { TestQuestion } from '@/types';
+import { api } from '@/utils/apiResponse';
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -15,12 +16,12 @@ export async function GET(request: Request) {
     query = query.eq('test_id', testId);
   }
 
-  const { data, error } = await query.order('created_at', { ascending: false });
+  const { data, error } = await query.order('id', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return api.error(error.message);
   }
-  return NextResponse.json(data as TestQuestion[]);
+  return api.ok(data as TestQuestion[]);
 }
 
 export async function POST(request: Request) {
@@ -36,9 +37,9 @@ export async function POST(request: Request) {
     .select();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return api.error(error.message);
   }
-  return NextResponse.json(data as TestQuestion[], { status: 201 });
+  return api.ok(data as TestQuestion[]);
 }
 
 export async function PUT(request: Request) {
@@ -49,7 +50,7 @@ export async function PUT(request: Request) {
   const testId = Array.isArray(body) && body.length > 0 ? body[0].test_id : null;
   
   if (!testId) {
-    return NextResponse.json({ error: 'test_id is required' }, { status: 400 });
+    return api.error('test_id is required');
   }
 
   // Start a transaction
@@ -59,7 +60,7 @@ export async function PUT(request: Request) {
     .eq('test_id', testId);
 
   if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    return api.error(deleteError.message);
   }
 
   // If there are new questions to insert
@@ -70,13 +71,13 @@ export async function PUT(request: Request) {
       .select();
 
     if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+      return api.error(insertError.message);
     }
 
-    return NextResponse.json(data as TestQuestion[]);
+    return api.ok(data as TestQuestion[]);
   }
 
-  return NextResponse.json({ success: true });
+  return api.ok({ success: true });
 }
 
 export async function DELETE(request: Request) {
@@ -89,7 +90,7 @@ export async function DELETE(request: Request) {
     .eq('id', id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return api.error(error.message);
   }
-  return NextResponse.json({ success: true });
+  return api.ok({ success: true });
 }

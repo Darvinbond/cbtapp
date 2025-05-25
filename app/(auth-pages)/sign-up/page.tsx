@@ -1,10 +1,11 @@
 import { signUpAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
-import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import FormContainer from "@/components/custom/FormContainer";
 import Link from "next/link";
 import { SmtpMessage } from "../smtp-message";
+import { Button } from "@/components/ui/button";
+import { CornerDownLeft } from "lucide-react";
 
 export default async function Signup(props: {
   searchParams: Promise<Message>;
@@ -19,19 +20,19 @@ export default async function Signup(props: {
   }
 
   return (
-    <>
-      <form className="flex flex-col min-w-64 max-w-64 mx-auto">
-        <h1 className="text-2xl font-medium">Sign up</h1>
-        <p className="text-sm text text-foreground">
-          Already have an account?{" "}
-          <Link className="text-primary font-medium underline" href="/sign-in">
-            Sign in
-          </Link>
-        </p>
-        <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8">
-          <Label htmlFor="email">Email</Label>
+    <form className="flex flex-col items-center w-full max-w-sm m-auto">
+      <h1 className="text-2xl font-medium">Get started!</h1>
+      <p className="text-sm text text-foreground">
+        Already have an account?{" "}
+        <Link className="text-primary font-medium underline" href="/sign-in">
+          Sign in
+        </Link>
+      </p>
+      <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8 w-full">
+        <FormContainer label="Email address">
           <Input name="email" placeholder="you@example.com" required />
-          <Label htmlFor="password">Password</Label>
+        </FormContainer>
+        <FormContainer label="Password">
           <Input
             type="password"
             name="password"
@@ -39,13 +40,12 @@ export default async function Signup(props: {
             minLength={6}
             required
           />
-          <SubmitButton formAction={signUpAction} pendingText="Signing up...">
-            Sign up
-          </SubmitButton>
-          <FormMessage message={searchParams} />
-        </div>
-      </form>
-      <SmtpMessage />
-    </>
+        </FormContainer>
+        <Button className="w-max ml-auto mt-[16px]" formAction={signUpAction}>
+          <CornerDownLeft /> Sign up
+        </Button>
+        <FormMessage message={searchParams} />
+      </div>
+    </form>
   );
 }

@@ -1,51 +1,89 @@
 "use client";
 
-import { useState } from "react";
-import SetQuestionBox from "@/components/custom/SetQuestionBox";
+import { useCallback, useEffect, useState } from "react";
+import SetQuestionBox, {
+  DEFAULT_QUESTION_DATA,
+  questionSchema,
+  testQuestionSchema,
+} from "@/components/custom/SetQuestionBox";
 import AddQuestionButton from "@/components/custom/AddQuestionButton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input"; // Assuming you have an Input component
 import { Check, Eye, ChevronLeft, Earth } from "lucide-react";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LoadingOverlay } from "@/components/custom/LoadingOverlay";
+import { useParams } from "next/navigation";
+import { toast } from "sonner";
+import * as yup from "yup";
+import { useFieldArray, useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Card, CardContent } from "@/components/ui/card";
+import GroupList from "@/components/custom/EachGroup";
+import TestSettings from "@/components/custom/TestSettings";
+import { useApiRequest } from "@/hooks/useApiRequest";
+import TestQuestion from "@/components/custom/TestQuestion";
+import TestProgress from "@/components/custom/TestProgress";
+// import { EditTest } from "@/components/custom/EditTestDialog"; // Commented out as its usage isn't clear in the provided context for settings form
 
-interface QuestionData {
-  text: string;
-  question_type: "one" | "many" | "short";
-  options: string[];
-  answer: string[];
-  metadata: Record<string, any>;
-}
 
 export default function Page() {
-  const [questions, setQuestions] = useState<QuestionData[]>([
-    {
-      text: "",
-      question_type: "one" as const,
-      options: [""],
-      answer: [""],
-      metadata: {},
-    },
-  ]);
+  const params = useParams();
+  const { apiRequest } = useApiRequest();
+  const [isSaving, setIsSaving] = useState(false);
+  const [testData, setTestData] = useState(null);
+  const [isFetching, setIsFetching] = useState(true);
+  const [testQuestions, setTestQuestions] = useState([]);
 
-  const addQuestion = (index: number, position: "above" | "below") => {
-    const newQuestion: QuestionData = {
-      text: "",
-      question_type: "one" as const,
-      options: [""],
-      answer: [""],
-      metadata: {},
-    };
-    const newIndex = position === "above" ? index : index + 1;
-    setQuestions((prev) => [
-      ...prev.slice(0, newIndex),
-      newQuestion,
-      ...prev.slice(newIndex),
-    ]);
+  const fetchTestData = useCallback(async () => {
+    const testId = params.testid ? String(params.testid) : "";
+    if (!testId) {
+      // toast.error("Test ID is undefined");
+      return;
+    }
+
+    const data = await apiRequest(`/api/tests/${encodeURIComponent(testId)}`);
+
+    if (data) {
+      setTestData(data);
+    }
+
+    setIsFetching(false);
+  }, [params.testid]);
+
+  const SubmitQuestions = async () => {
+    // questionSchema
+    // loop theor the testQuestions array and validate each question for each thet dont valid filter it out
+    const validQuestions = testQuestions.map((question: any) => {
+      delete question.index;
+      return question;
+    }).filter((question: any) => {
+      return testQuestionSchema.isValidSync(question);
+    });
+    console.log(testQuestions, validQuestions, testQuestionSchema.isValidSync(testQuestions[0]));
+    
+    setIsSaving(true);
+    const testId = params.testid ? String(params.testid) : "";
+    if (!testId) {
+      toast.error("Test ID is missing.");
+      setIsSaving(false);
+      return;
+    }
+
+    const newData = await apiRequest(
+      `/api/test-question/${encodeURIComponent(testId)}`,
+      {
+        method: "POST",
+        body: validQuestions,
+      }
+    );
+
+    setIsSaving(false);
   };
 
-  const updateQuestion = (index: number, data: QuestionData) => {
-    setQuestions((prev) => prev.map((q, i) => (i === index ? data : q)));
-  };
+  useEffect(() => {
+    fetchTestData();
+  }, [fetchTestData]);
 
   return (
     <div className="w-full h-screen flex flex-col justify-start">
@@ -57,14 +95,21 @@ export default function Page() {
                 <ChevronLeft />
               </Link>
             </Button>
+            <span className="font-normal text-[14px]">{testData?.name}</span>
           </div>
+          {/* {JSON.stringify(isSaving)} */}
           <div className="flex items-center justify-end gap-[8px]">
-            <Button variant={"outline"}>
+            {/* <Button variant={"outline"}>
               <Eye />
               Preview
-            </Button>
-            <Button size={"sm"} variant={"secondary"}>
-              <Check /> Save Changes
+            </Button> */}
+            <Button
+              size={"sm"}
+              variant={"secondary"}
+              isLoading={isSaving}
+              onClick={SubmitQuestions}
+            >
+              <Check /> {isSaving ? "Saving..." : "Save Changes"}
             </Button>
             <Button size={"sm"}>
               <Earth /> Publish
@@ -72,73 +117,42 @@ export default function Page() {
           </div>
         </div>
       </nav>
-      <div className="w-full h-[calc(100vh-48px)] flex items-start justify-between overflow-y-auto">
+      <div className="w-full h-[calc(100vh-48px)] px-[16px] flex items-start justify-center overflow-y-auto">
         <Tabs defaultValue="test" className="flex flex-col w-full py-[32px]">
           <TabsList className="w-max mx-auto z-40 sticky top-[32px]">
-            <TabsTrigger value="test">Test</TabsTrigger>
+            {" "}
+            {/* Ensure TabsList has a background */}
+            <TabsTrigger value="test">Questions</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="candidates">Candidates</TabsTrigger>
             <TabsTrigger value="result">Result</TabsTrigger>
           </TabsList>
-          <div className="w-full mx-auto max-w-2xl">
+          <div className="w-full mx-auto max-w-2xl mt-4">
             <TabsContent value="test">
-              <div className="w-full space-y-2">
-                <AddQuestionButton onAdd={(pos) => addQuestion(-1, pos)} />
-
-                {questions.map((question, index) => (
-                  <div key={index} className="space-y-2">
-                    <SetQuestionBox
-                      questionNumber={index + 1}
-                      initialData={question}
-                      onChange={(value) => updateQuestion(index, value)}
-                    />
-                    <AddQuestionButton
-                      onAdd={(pos) => addQuestion(index, pos)}
-                    />
-                  </div>
-                ))}
-
-                <div className="mt-8 space-y-4">
-                  <h3 className="text-lg font-medium">
-                    Questions Data Preview
-                  </h3>
-                  <pre className="p-4 bg-white rounded-lg overflow-auto border border-zinc-200 text-sm">
-                    {JSON.stringify(questions, null, 2)}
-                  </pre>
-                </div>
-              </div>
+              <TestQuestion
+                testid={params.testid as string}
+                setTestQuestions={setTestQuestions}
+                testQuestions={testQuestions}
+              />
             </TabsContent>
-            <TabsContent value="result">
-              <div className="w-full flex-1 flex flex-col gap-8 items-center p-8">
-                <div className="w-full max-w-2xl space-y-2">
-                  <AddQuestionButton onAdd={(pos) => addQuestion(-1, pos)} />
-
-                  {questions.map((question, index) => (
-                    <div key={index} className="space-y-2">
-                      <SetQuestionBox
-                        questionNumber={index + 1}
-                        initialData={question}
-                        onChange={(value) => updateQuestion(index, value)}
-                      />
-                      <AddQuestionButton
-                        onAdd={(pos) => addQuestion(index, pos)}
-                      />
-                    </div>
-                  ))}
-
-                  <div className="mt-8 space-y-4">
-                    <h3 className="text-lg font-medium">
-                      Questions Data Preview
-                    </h3>
-                    <pre className="p-4 bg-white rounded-lg overflow-auto border border-zinc-200 text-sm">
-                      {JSON.stringify(questions, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              </div>
+            <TabsContent value="settings">
+              <TestSettings test_id={params.testid as string} />
+            </TabsContent>
+            <TabsContent value="candidates">
+              <GroupList testID={params.testid as string} />
+            </TabsContent>
+            <TabsContent className="w-full" value="result">
+              <Card className="max-w-full w-full mx-auto overflow-hidden rounded-[14px] border border-zinc-200 shadow-none">
+                <CardContent className="space-y-6 p-0 overflow-hidden">
+                  <TestProgress testid={params.testid as string} />
+                </CardContent>
+              </Card>
             </TabsContent>
           </div>
         </Tabs>
-        <div className="w-full max-w-xs bg-white border-l border-l-zinc-200 h-full inset-y-0 right-0 sticky"></div>
       </div>
+      <LoadingOverlay isLoading={isSaving} message="Saving changes" />
+      <LoadingOverlay isLoading={isFetching} message="Fetching test data" />
     </div>
   );
 }
